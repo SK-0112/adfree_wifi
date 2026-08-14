@@ -1,0 +1,71 @@
+name: Build and publish
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      # The Arduino core and toolchain are ~1 GB; caching turns a 6 minute build
+      # into about 90 seconds.
+      - name: Cache PlatformIO
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.platformio
+            adblock-esp32/.pio
+          key: pio-${{ hashFiles('adblock-esp32/platformio.ini') }}
+          restore-keys: pio-
+
+      - name: Install build tools
+        run: pip install platformio esptool
+
+      - name: Build merged image
+        run: python tools/build_release.py
+
+      - name: Upload image as an artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: adfree-firmware
+          path: docs/firmware/*.bin
+
+      - name: Attach image to the release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: docs/firmware/*.bin
+          generate_release_notes: true
+
+      - name: Package the install page
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
