@@ -89,14 +89,20 @@ AdFree on one device before committing the whole house.
 
 ## What you get
 
-- **~490,000 blocked domains** from the three default lists, held in PSRAM and searched with a binary search
+- **~475,000 blocked domains** from the four default lists, held in PSRAM and searched with a binary search
   over a sorted FNV-1a hash table. An entry for `doubleclick.net` also blocks
   `a.b.doubleclick.net`.
-- **A dashboard** at `http://adblock.local` — live query and block counts, allow
-  and deny lists, a pause button, blocklist URLs, upstream DNS settings.
-- **Self-updating.** Blocklists refresh on a schedule. Firmware updates verify a
-  SHA-256 digest before becoming bootable and roll back automatically if the new
-  image can't stay healthy.
+- **A dashboard** at `http://adblock.local`: a 24-hour chart, a live query log
+  with one-click Allow and Block, the most-blocked domains and busiest devices,
+  a "why is this blocked?" checker, pause timers, and per-list download status.
+  Works on a phone, in light or dark.
+- **Self-updating.** Blocklists refresh on a schedule and retry on their own if
+  a download fails. Firmware checks for updates daily, installs only over
+  verified HTTPS with a SHA-256 match, and rolls back if the new image can't
+  stay healthy. Both can be switched off.
+- **Plugs the usual leaks.** Firefox's built-in DNS-over-HTTPS and iCloud
+  Private Relay are switched off on your network, and a default list blocks
+  the DoH servers other browsers and apps use to skip the blocker.
 - **A status LED.** Green healthy · amber degraded · blue updating · purple
   paused · red no Wi-Fi · white pulse setup portal.
 - **~0.4 W** continuous draw. Leave it plugged in behind the router.
@@ -133,7 +139,7 @@ python adblock-esp32/setup_gui.py
 **Command line** — writes the same prebuilt image the web installer uses.
 
 ```bash
-python -m esptool --chip esp32s3 write-flash 0x0 docs/firmware/adfree-esp32s3-1.0.0.bin
+python -m esptool --chip esp32s3 write-flash 0x0 docs/firmware/adfree-esp32s3-1.1.0.bin
 ```
 
 On Linux, add yourself to the serial group first: `sudo usermod -aG dialout $USER`,

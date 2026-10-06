@@ -6,13 +6,26 @@
 
 AppConfig ConfigStore::cfg;
 static const char *CFG_PATH = "/config.json";
+static SemaphoreHandle_t s_cfgMutex = nullptr;
+
+void ConfigStore::lock() {
+  if (!s_cfgMutex) s_cfgMutex = xSemaphoreCreateRecursiveMutex();
+  xSemaphoreTakeRecursive(s_cfgMutex, portMAX_DELAY);
+}
+void ConfigStore::unlock() {
+  if (s_cfgMutex) xSemaphoreGiveRecursive(s_cfgMutex);
+}
 
 static void arrToJson(JsonArray arr, const std::vector<String> &v) {
   for (auto &s : v) arr.add(s);
 }
 static void jsonToArr(JsonArrayConst arr, std::vector<String> &v) {
   v.clear();
-  for (JsonVariantConst x : arr) v.push_back(x.as<String>());
+  for (JsonVariantConst x : arr) {
+    String s = x.as<String>();
+    s.trim();
+    if (s.length()) v.push_back(s);
+  }
 }
 
 String ConfigStore::sha256Hex(const String &input) {
@@ -34,10 +47,19 @@ void ConfigStore::setAdminPassword(const String &plainPassword) {
 }
 
 bool ConfigStore::checkAdminPassword(const String &plainPassword) {
-  return sha256Hex(plainPassword) == cfg.admin_pass_hash;
+  // Constant-time compare so response timing can't leak how much of the hash
+  // matched.
+  String h = sha256Hex(plainPassword);
+  const String &want = cfg.admin_pass_hash;
+  if (h.length() != want.length()) return false;
+  uint8_t diff = 0;
+  for (size_t i = 0; i < h.length(); i++) diff |= (uint8_t)(h[i] ^ want[i]);
+  return diff == 0;
 }
 
 bool ConfigStore::begin() {
+  lock();
+  unlock();
   if (!LittleFS.begin(true)) {
     Serial.println("[cfg] LittleFS mount failed even after format!");
     return false;
@@ -76,12 +98,18 @@ bool ConfigStore::load() {
   cfg.pause_until_epoch = doc["pause_until_epoch"] | cfg.pause_until_epoch;
   cfg.pause_indefinite = doc["pause_indefinite"] | cfg.pause_indefinite;
   cfg.ota_manifest_url = doc["ota_manifest_url"] | cfg.ota_manifest_url;
-  cfg.fw_version = doc["fw_version"] | cfg.fw_version;
+  // Boards from 1.0.x saved an empty URL, which meant "never update". The
+  // ota_auto switch is the off button now, so give them the real manifest.
+  if (cfg.ota_manifest_url.isEmpty()) cfg.ota_manifest_url = DEFAULT_OTA_MANIFEST;
+  cfg.ota_auto = doc["ota_auto"] | cfg.ota_auto;
   cfg.led_enabled = doc["led_enabled"] | cfg.led_enabled;
   cfg.provisioned = doc["provisioned"] | cfg.provisioned;
 
   if (doc["upstream_dns"].is<JsonArray>()) jsonToArr(doc["upstream_dns"], cfg.upstream_dns);
   if (doc["blocklist_urls"].is<JsonArray>()) jsonToArr(doc["blocklist_urls"], cfg.blocklist_urls);
+  if (cfg.dns_timeout_ms < 200 || cfg.dns_timeout_ms > 5000) cfg.dns_timeout_ms = 1200;
+  if (cfg.refresh_interval_hours < 1 || cfg.refresh_interval_hours > 720) cfg.refresh_interval_hours = 24;
+  if (cfg.upstream_dns.empty()) cfg.upstream_dns = AppConfig().upstream_dns;
   if (doc["whitelist"].is<JsonArray>()) jsonToArr(doc["whitelist"], cfg.whitelist);
   if (doc["blacklist"].is<JsonArray>()) jsonToArr(doc["blacklist"], cfg.blacklist);
 
@@ -90,6 +118,7 @@ bool ConfigStore::load() {
 }
 
 bool ConfigStore::save() {
+  CfgLock guard;
   JsonDocument doc;
   doc["wifi_ssid"] = cfg.wifi_ssid;
   doc["wifi_pass"] = cfg.wifi_pass;
@@ -107,7 +136,7 @@ bool ConfigStore::save() {
   doc["pause_until_epoch"] = cfg.pause_until_epoch;
   doc["pause_indefinite"] = cfg.pause_indefinite;
   doc["ota_manifest_url"] = cfg.ota_manifest_url;
-  doc["fw_version"] = cfg.fw_version;
+  doc["ota_auto"] = cfg.ota_auto;
   doc["led_enabled"] = cfg.led_enabled;
   doc["provisioned"] = cfg.provisioned;
 
@@ -123,8 +152,16 @@ bool ConfigStore::save() {
     Logger::log("cfg: failed to open temp config for write");
     return false;
   }
-  serializeJson(doc, f);
+  size_t want = measureJson(doc);
+  size_t wrote = serializeJson(doc, f);
   f.close();
+  if (wrote != want) {
+    // Filesystem full: keep the old config rather than replace it with a
+    // truncated one.
+    LittleFS.remove(tmpPath);
+    Logger::log("cfg: short write, config NOT saved");
+    return false;
+  }
 
   LittleFS.remove(CFG_PATH);
   if (!LittleFS.rename(tmpPath, CFG_PATH)) {

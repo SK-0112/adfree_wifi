@@ -26,6 +26,9 @@ FW_DIR = os.path.join(ROOT, "adblock-esp32")
 BUILD_DIR = os.path.join(FW_DIR, ".pio", "build", "fresh")
 OUT_DIR = os.path.join(ROOT, "docs", "firmware")
 MANIFEST = os.path.join(ROOT, "docs", "manifest.json")
+OTA_MANIFEST = os.path.join(OUT_DIR, "ota.json")
+# Where GitHub Pages serves docs/. Boards fetch firmware/ota.json from here.
+PAGES_URL = "https://sk-0112.github.io/adfree_wifi"
 
 # Offsets for an Arduino-ESP32 dual-OTA layout on the ESP32-S3.
 BOOTLOADER_OFFSET = 0x0
@@ -40,11 +43,11 @@ def run(cmd, **kw):
 
 
 def firmware_version():
-    """Single source of truth for the version: the default in config.h."""
-    with open(os.path.join(FW_DIR, "src", "config.h"), encoding="utf-8") as f:
-        m = re.search(r'fw_version\s*=\s*"([^"]+)"', f.read())
+    """Single source of truth for the version: ADFREE_FW_VERSION in version.h."""
+    with open(os.path.join(FW_DIR, "src", "version.h"), encoding="utf-8") as f:
+        m = re.search(r'#define\s+ADFREE_FW_VERSION\s+"([^"]+)"', f.read())
     if not m:
-        sys.exit("Could not find fw_version in src/config.h")
+        sys.exit("Could not find ADFREE_FW_VERSION in src/version.h")
     return m.group(1)
 
 
@@ -127,10 +130,25 @@ def main():
         data = f.read()
     digest = hashlib.sha256(data).hexdigest()
 
-    # Keep only the current image so Pages doesn't accumulate old builds.
+    # The app-only image is what boards download for an over-the-air update;
+    # the merged image above is only for a fresh USB install.
+    app_name = f"adfree-esp32s3-app-{version}.bin"
+    shutil.copyfile(app, os.path.join(OUT_DIR, app_name))
+    with open(app, "rb") as f:
+        app_digest = hashlib.sha256(f.read()).hexdigest()
+
+    # Keep only the current images so Pages doesn't accumulate old builds.
     for old in os.listdir(OUT_DIR):
-        if old.startswith("adfree-esp32s3-") and old != merged_name:
+        if old.startswith("adfree-esp32s3-") and old not in (merged_name, app_name):
             os.remove(os.path.join(OUT_DIR, old))
+
+    with open(OTA_MANIFEST, "w", encoding="utf-8") as f:
+        json.dump({
+            "version": version,
+            "url": f"{PAGES_URL}/firmware/{app_name}",
+            "sha256": app_digest,
+        }, f, indent=2)
+        f.write("\n")
 
     with open(MANIFEST, "w", encoding="utf-8") as f:
         json.dump({
@@ -147,6 +165,7 @@ def main():
     print(f"\n  image     docs/firmware/{merged_name}")
     print(f"  size      {len(data) / 1024:.0f} KB")
     print(f"  sha256    {digest}")
+    print(f"  ota       docs/firmware/{app_name}  ({app_digest[:16]}...)")
     print("\nCommit docs/ and the web installer serves this build.")
 
 

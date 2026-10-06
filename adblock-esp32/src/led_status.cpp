@@ -30,10 +30,14 @@ static void showColor(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 void LedStatus::loop() {
+  // Write black once when the LED is switched off. show() reinstalls the RMT
+  // driver on every call, so doing it every loop pass is pure waste.
+  static bool dark = false;
   if (!ConfigStore::cfg.led_enabled) {
-    showColor(0, 0, 0);
+    if (!dark) { showColor(0, 0, 0); dark = true; }
     return;
   }
+  dark = false;
   uint32_t now = millis();
   if (now - _lastUpdate < 40) return; // ~25fps update budget, cheap
   _lastUpdate = now;

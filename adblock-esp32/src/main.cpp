@@ -11,6 +11,7 @@
 #include "dns_server.h"
 #include "web_ui.h"
 #include "ota.h"
+#include "version.h"
 
 // Compile-time seed credentials. Only used on a truly blank device; once the
 // unit has been provisioned, config.json in LittleFS is authoritative and these
@@ -100,7 +101,7 @@ void setup() {
 
   Serial.println();
   Serial.println("=====================================");
-  Serial.println("  ESP32-S3 AdBlock DNS");
+  Serial.println("  AdFree " ADFREE_FW_VERSION " - ESP32-S3 DNS ad blocker");
   Serial.println("=====================================");
   Serial.printf("Chip: %s rev%d | flash %u MB | PSRAM %u KB\n", ESP.getChipModel(),
                 ESP.getChipRevision(), (unsigned)(ESP.getFlashChipSize() / (1024 * 1024)),
@@ -131,7 +132,7 @@ void setup() {
 
   Ota::begin(); // rollback bookkeeping must run before anything can crash
 
-  // Watchdog: if the main loop wedges for 30s the device resets itself. Paired
+  // Watchdog: if the main loop wedges for 90s the device resets itself. Paired
   // with the OTA boot counter this is what makes a bad image self-recover.
 #if ESP_ARDUINO_VERSION_MAJOR >= 3
   esp_task_wdt_config_t wdtCfg = {
@@ -157,8 +158,7 @@ void setup() {
 
   WebUI::begin();
 
-  Logger::log("boot: ready, ip=" + WiFi.localIP().toString() +
-              " fw=" + ConfigStore::cfg.fw_version);
+  Logger::log("boot: ready, ip=" + WiFi.localIP().toString() + " fw=" ADFREE_FW_VERSION);
 }
 
 void loop() {
@@ -192,6 +192,7 @@ void loop() {
       DnsServer53::loop();
     }
     Blocklist::loopMaintenance();
+    Ota::loop();
   }
 
   // NTP sync notice (needed for pause timers and timestamps)
@@ -203,8 +204,11 @@ void loop() {
   // expire a finished timed pause so the LED/state return to normal promptly
   if (ConfigStore::cfg.pause_until_epoch && s_ntpSynced &&
       (uint32_t)time(nullptr) >= ConfigStore::cfg.pause_until_epoch) {
-    ConfigStore::cfg.pause_until_epoch = 0;
-    ConfigStore::save();
+    {
+      CfgLock g;
+      ConfigStore::cfg.pause_until_epoch = 0;
+      ConfigStore::save();
+    }
     Logger::log("pause: expired, blocking resumed");
   }
 

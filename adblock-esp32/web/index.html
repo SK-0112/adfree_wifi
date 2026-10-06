@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0a0c11">
+<title>AdFree</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%235b7cff'/%3E%3Cpath d='M15 30.5a24 24 0 0 1 34 0M21.5 37.5a15 15 0 0 1 21 0' stroke='%23fff' stroke-width='4.6' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='46' r='3.6' fill='%23fff'/%3E%3Cpath d='M14 52 52 12' stroke='%23fff' stroke-width='4.4' stroke-linecap='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0a0c11;--bg2:#0d1017;--surface:#12151d;--surface2:#171b25;--surface3:#1d2230;--line:#242938;--line2:#2e3446;
+  --fg:#eef1f6;--muted:#9aa3b5;--faint:#6b7488;
+  --accent:#4f8cff;--accent2:#3a78ee;--accent-soft:rgba(79,140,255,.13);
+  --violet:#8b7bff;--violet-soft:rgba(139,123,255,.14);
+  --good:#37d39b;--good-soft:rgba(55,211,155,.13);
+  --warn:#f4c67a;--warn-soft:rgba(244,198,122,.13);
+  --bad:#ff7a7a;--bad-soft:rgba(255,122,122,.12);
+  --allowed:#3b4a6b;--blocked:#8b7bff;
+  --shadow:0 1px 0 rgba(255,255,255,.03) inset,0 12px 32px -18px rgba(0,0,0,.6);
+  --r:14px;--r2:10px;
+  --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,Menlo,monospace;
+}
+:root[data-theme=light]{
+  --bg:#f5f6fa;--bg2:#eef0f5;--surface:#fff;--surface2:#f4f5f9;--surface3:#eceef4;--line:#e3e6ee;--line2:#d5d9e3;
+  --fg:#121620;--muted:#5a6375;--faint:#8a92a3;
+  --accent:#2f6fec;--accent2:#255fd1;--accent-soft:rgba(47,111,236,.1);
+  --violet:#6b57f0;--violet-soft:rgba(107,87,240,.1);
+  --good:#0f9f6e;--good-soft:rgba(15,159,110,.1);
+  --warn:#b7791f;--warn-soft:rgba(183,121,31,.11);
+  --bad:#d64545;--bad-soft:rgba(214,69,69,.09);
+  --allowed:#c5cde0;--blocked:#6b57f0;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px -16px rgba(16,24,40,.18);
+}
+@media (prefers-color-scheme:light){:root:not([data-theme=dark]){
+  --bg:#f5f6fa;--bg2:#eef0f5;--surface:#fff;--surface2:#f4f5f9;--surface3:#eceef4;--line:#e3e6ee;--line2:#d5d9e3;
+  --fg:#121620;--muted:#5a6375;--faint:#8a92a3;
+  --accent:#2f6fec;--accent2:#255fd1;--accent-soft:rgba(47,111,236,.1);
+  --violet:#6b57f0;--violet-soft:rgba(107,87,240,.1);
+  --good:#0f9f6e;--good-soft:rgba(15,159,110,.1);
+  --warn:#b7791f;--warn-soft:rgba(183,121,31,.11);
+  --bad:#d64545;--bad-soft:rgba(214,69,69,.09);
+  --allowed:#c5cde0;--blocked:#6b57f0;
+  --shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px -16px rgba(16,24,40,.18);
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:400 15px/1.55 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:var(--accent);text-decoration:none}
+h1,h2,h3{margin:0;letter-spacing:-.02em;line-height:1.2}
+p{margin:0}
+button,input,textarea,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+[hidden]{display:none!important}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.shell{max-width:1120px;margin:0 auto;padding:0 max(16px,env(safe-area-inset-left))}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+
+/* top bar */
+.top{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--line)}
+.top-in{display:flex;align-items:center;gap:14px;height:60px}
+.brand{display:flex;align-items:center;gap:10px;min-width:0}
+.brand svg{width:28px;height:28px;flex:none;border-radius:8px;box-shadow:0 4px 14px rgba(91,124,255,.35)}
+.brand b{font-weight:680;letter-spacing:-.02em;font-size:16px}
+.brand small{display:block;color:var(--faint);font-size:12px;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.top .grow{flex:1}
+.pill{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 11px;border-radius:99px;font-size:12.5px;font-weight:620;white-space:nowrap;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.pill i{width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.pill.ok{background:var(--good-soft);color:var(--good);border-color:transparent}
+.pill.ok i{box-shadow:0 0 0 0 currentColor;animation:ping 2.4s infinite}
+.pill.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.pill.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+.pill.violet{background:var(--violet-soft);color:var(--violet);border-color:transparent}
+@keyframes ping{0%{box-shadow:0 0 0 0 color-mix(in srgb,currentColor 60%,transparent)}70%,100%{box-shadow:0 0 0 7px transparent}}
+.icon-btn{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;border:1px solid var(--line);background:var(--surface);cursor:pointer;color:var(--muted);flex:none}
+.icon-btn:hover{color:var(--fg);border-color:var(--line2)}
+.icon-btn svg{width:18px;height:18px}
+
+/* tabs */
+.tabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0 -4px}
+.tabs::-webkit-scrollbar{display:none}
+.tabs a{position:relative;display:flex;align-items:center;gap:7px;padding:11px 12px 12px;color:var(--muted);font-size:14px;font-weight:560;white-space:nowrap;border-radius:8px 8px 0 0}
+.tabs a svg{width:16px;height:16px;opacity:.85}
+.tabs a:hover{color:var(--fg)}
+.tabs a[aria-current=page]{color:var(--fg)}
+.tabs a[aria-current=page]::after{content:"";position:absolute;left:10px;right:10px;bottom:-1px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--violet))}
+
+/* banner */
+.banner{display:none;margin-top:16px;padding:11px 14px;border-radius:var(--r2);font-size:14px;align-items:center;gap:10px}
+.banner.show{display:flex}
+.banner.bad{background:var(--bad-soft);color:var(--bad)}
+.banner.warn{background:var(--warn-soft);color:var(--warn)}
+
+main{padding:22px 0 64px}
+.view{display:none;animation:fade .25s ease}
+.view.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.view,.pill.ok i{animation:none}}
+
+/* cards */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px;box-shadow:var(--shadow);min-width:0}
+.view>*+*{margin-top:16px}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+.card-h h2{font-size:15px;font-weight:640}
+.card-h p,.hint{color:var(--muted);font-size:13.5px}
+.hint{margin-top:6px}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media(max-width:900px){.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.g2{grid-template-columns:1fr}}
+
+/* hero */
+.hero{display:flex;align-items:center;gap:20px;padding:22px;position:relative;overflow:hidden}
+.hero{overflow:clip}
+.hero::before{content:"";position:absolute;inset:0;background:radial-gradient(560px 320px at 88% -30%,var(--glow,rgba(55,211,155,.14)),transparent 70%);pointer-events:none}
+.hero>*{position:relative}
+.shield{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;flex:none;background:var(--good-soft);color:var(--good);transition:background .3s,color .3s}
+.shield svg{width:32px;height:32px}
+.hero.paused{--glow:rgba(139,123,255,.16)}.hero.paused .shield{background:var(--violet-soft);color:var(--violet)}
+.hero.off{--glow:rgba(255,122,122,.13)}.hero.off .shield{background:var(--bad-soft);color:var(--bad)}
+.hero.degraded{--glow:rgba(244,198,122,.14)}.hero.degraded .shield{background:var(--warn-soft);color:var(--warn)}
+.hero-t{flex:1;min-width:0}
+.hero-t h1{font-size:22px;font-weight:690}
+.hero-t p{color:var(--muted);margin-top:4px;font-size:14px}
+.hero-a{display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+@media(max-width:760px){.hero{flex-wrap:wrap}.hero-a{align-items:stretch;width:100%}}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:36px;padding:0 14px;border-radius:9px;border:1px solid var(--line2);background:var(--surface2);font-size:14px;font-weight:580;cursor:pointer;white-space:nowrap;transition:background .15s,border-color .15s,transform .08s}
+.btn:hover{background:var(--surface3)}
+.btn:active{transform:translateY(1px)}
+.btn:disabled{opacity:.55;cursor:default;transform:none}
+.btn svg{width:16px;height:16px}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.pri:hover{background:var(--accent2)}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 35%,var(--line))}
+.btn.danger:hover{background:var(--bad-soft)}
+.btn.sm{height:30px;padding:0 10px;font-size:13px;border-radius:8px}
+.btn.busy{pointer-events:none;opacity:.7}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.seg{display:inline-flex;padding:3px;border-radius:11px;background:var(--surface2);border:1px solid var(--line);gap:2px;flex-wrap:wrap}
+.seg button{height:30px;padding:0 12px;border:0;border-radius:8px;background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer}
+.seg button:hover{color:var(--fg);background:var(--surface3)}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgba(0,0,0,.18)}
+
+/* switch */
+.sw{position:relative;display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none;font-size:14px}
+.sw input{position:absolute;opacity:0;width:1px;height:1px}
+.sw span{width:40px;height:23px;border-radius:99px;background:var(--line2);position:relative;transition:background .2s;flex:none}
+.sw span::after{content:"";position:absolute;top:3px;left:3px;width:17px;height:17px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw input:checked+span{background:var(--good)}
+.sw input:checked+span::after{transform:translateX(17px)}
+.sw input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+
+/* kpis */
+.kpi{padding:16px 18px}
+.kpi .l{color:var(--muted);font-size:12.5px;font-weight:560;display:flex;align-items:center;gap:7px}
+.kpi .l i{width:8px;height:8px;border-radius:3px;flex:none}
+.kpi .v{font-size:27px;font-weight:690;letter-spacing:-.025em;margin-top:6px;line-height:1.1}
+.kpi .s{color:var(--faint);font-size:12.5px;margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ring{--p:0;width:46px;height:46px;border-radius:50%;background:conic-gradient(var(--violet) calc(var(--p)*1%),var(--line) 0);display:grid;place-items:center;float:right;margin-top:-4px}
+.ring::after{content:"";width:34px;height:34px;border-radius:50%;background:var(--surface)}
+.bar{height:6px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:10px}
+.bar b{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),var(--violet));width:0;transition:width .5s}
+.bar.warn b{background:var(--warn)}
+
+/* chart */
+.legend{display:flex;gap:14px;font-size:12.5px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:3px}
+.chart{position:relative;height:180px;margin-top:4px}
+.chart svg{display:block;width:100%;height:100%;overflow:visible}
+.chart .axis{fill:var(--faint);font-size:10.5px}
+.chart .gl{stroke:var(--line);stroke-width:1}
+.tip{position:absolute;pointer-events:none;background:var(--surface3);border:1px solid var(--line2);border-radius:9px;padding:7px 10px;font-size:12.5px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25);opacity:0;transition:opacity .1s;z-index:2}
+.tip.on{opacity:1}
+.tip b{font-weight:640}
+.empty{color:var(--faint);font-size:14px;text-align:center;padding:26px 10px}
+
+/* lists */
+.list{list-style:none;margin:0;padding:0}
+.li{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line);min-width:0}
+.li:first-child{border-top:0}
+.li .d{flex:1;min-width:0;font-family:var(--mono);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.li .m{color:var(--faint);font-size:12.5px;white-space:nowrap}
+.li .n{font-weight:620;font-size:13.5px;min-width:44px;text-align:right}
+.rank{position:relative;flex:1;min-width:0}
+.rank em{position:absolute;inset:-3px -6px;border-radius:6px;background:var(--violet-soft);transform-origin:left;z-index:0}
+.rank.c em{background:var(--accent-soft)}
+.rank span{position:relative;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:var(--mono);font-size:13px}
+.tag{display:inline-flex;align-items:center;justify-content:center;min-width:62px;height:21px;padding:0 8px;border-radius:6px;font-size:11.5px;font-weight:650;white-space:nowrap;flex:none}
+.tag.b{background:var(--violet-soft);color:var(--violet)}
+.tag.a{background:var(--surface2);color:var(--muted)}
+.tag.w{background:var(--good-soft);color:var(--good)}
+.tag.x{background:var(--warn-soft);color:var(--warn)}
+.qm{flex:1;min-width:0}
+.qm .d{font-family:var(--mono);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qs{color:var(--faint);font-size:12px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.qs .client{font-size:12px}
+.qrow .act{opacity:0;transition:opacity .15s}
+.qrow:hover .act,.qrow:focus-within .act{opacity:1}
+@media(hover:none){.qrow .act{opacity:1}}
+.client{color:var(--muted);font-size:12.5px;white-space:nowrap;cursor:pointer;border-bottom:1px dashed transparent}
+.client:hover{border-bottom-color:var(--faint)}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.toolbar .grow{flex:1;min-width:180px}
+
+/* forms */
+.field{display:block;margin-top:14px}
+.field:first-child{margin-top:0}
+.field>span{display:block;font-size:13px;font-weight:600;margin-bottom:6px}
+.field>small{display:block;color:var(--faint);font-size:12.5px;margin-top:5px}
+.in,textarea.in{width:100%;height:38px;padding:0 12px;border-radius:9px;border:1px solid var(--line2);background:var(--bg2);outline:none;transition:border-color .15s,box-shadow .15s;font-size:14px}
+textarea.in{height:auto;min-height:92px;padding:9px 12px;resize:vertical;font-family:var(--mono);font-size:13px;line-height:1.5}
+.in:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.in.mono{font-family:var(--mono);font-size:13px}
+.search{position:relative}
+.search svg{position:absolute;left:11px;top:50%;width:16px;height:16px;transform:translateY(-50%);color:var(--faint);pointer-events:none}
+.search .in{padding-left:34px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{display:inline-flex;align-items:center;gap:4px;max-width:100%;height:30px;padding:0 4px 0 11px;border-radius:8px;background:var(--surface2);border:1px solid var(--line);font-family:var(--mono);font-size:12.5px}
+.chip span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip button{width:22px;height:22px;border:0;background:transparent;border-radius:6px;cursor:pointer;color:var(--faint);display:grid;place-items:center;flex:none}
+.chip button:hover{background:var(--bad-soft);color:var(--bad)}
+.src{display:flex;gap:12px;align-items:flex-start;padding:12px 0;border-top:1px solid var(--line)}
+.src:first-child{border-top:0}
+.src .b{flex:1;min-width:0}
+.src .u{font-family:var(--mono);font-size:12.5px;overflow-wrap:anywhere}
+.src .st{font-size:12.5px;color:var(--faint);margin-top:2px}
+.dot{width:9px;height:9px;border-radius:50%;margin-top:5px;flex:none;background:var(--faint)}
+.dot.ok{background:var(--good)}.dot.bad{background:var(--bad)}
+.preset{display:flex;gap:12px;align-items:center;padding:11px 12px;border-radius:10px;background:var(--surface2);border:1px solid var(--line)}
+.preset+.preset{margin-top:8px}
+.preset .b{flex:1;min-width:0}
+.preset b{font-size:14px;font-weight:620}
+.preset p{color:var(--muted);font-size:12.5px}
+.kv{display:grid;grid-template-columns:minmax(120px,max-content) 1fr;gap:9px 18px;font-size:14px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.secret{font-family:var(--mono);background:var(--surface2);padding:2px 8px;border-radius:6px;border:1px solid var(--line)}
+.log{margin:0;max-height:420px;overflow:auto;font:12px/1.6 var(--mono);color:var(--muted);background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:12px;white-space:pre-wrap;overflow-wrap:anywhere}
+.check-res{margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;display:none;align-items:center;gap:10px;flex-wrap:wrap}
+.check-res.on{display:flex}
+.check-res.b{background:var(--violet-soft)}
+.check-res.a{background:var(--surface2)}
+.check-res.w{background:var(--good-soft)}
+.progress{height:4px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:10px;display:none}
+.progress.on{display:block}
+.progress b{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+
+/* toast */
+#toast{position:fixed;left:50%;bottom:max(20px,env(safe-area-inset-bottom));transform:translate(-50%,16px);background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:560;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:50;max-width:calc(100vw - 32px);box-shadow:0 12px 32px rgba(0,0,0,.3)}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+#toast.err{background:var(--bad);color:#fff}
+.skel{color:transparent!important;background:linear-gradient(90deg,var(--surface2),var(--surface3),var(--surface2));background-size:200% 100%;animation:sk 1.4s infinite;border-radius:6px}
+@keyframes sk{to{background-position:-200% 0}}
+@media(max-width:560px){.card{padding:16px}.top-in{gap:10px}.brand small{display:none}.hide-sm{display:none}.kpi .v{font-size:23px}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-shield" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3 4.5 6v5.5c0 4.6 3.1 8.3 7.5 9.5 4.4-1.2 7.5-4.9 7.5-9.5V6L12 3z"/><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="m8.8 12.2 2.2 2.2 4.4-4.6"/></symbol>
+  <symbol id="i-pause" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 6v12M15 6v12"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path fill="currentColor" d="M8 5.5v13a1 1 0 0 0 1.5.86l10.5-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z"/></symbol>
+  <symbol id="i-off" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3 4.5 6v5.5c0 4.6 3.1 8.3 7.5 9.5 4.4-1.2 7.5-4.9 7.5-9.5V6L12 3zM9 9l6 6m0-6-6 6"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3 2.5 20h19L12 3zm0 6v5m0 3v.01"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.9 4.9l1.4 1.4m11.4 11.4 1.4 1.4M2 12h2m16 0h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></g></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></g></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M20 11a8 8 0 0 0-14.6-4.5L4 8m0-4v4h4M4 13a8 8 0 0 0 14.6 4.5L20 16m0 4v-4h-4"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="m7 7 10 10M17 7 7 17"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 10.5 12 4l8 6.5V20h-5v-6H9v6H4z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M9 6h11M9 12h11M9 18h11M4.5 6h.01M4.5 12h.01M4.5 18h.01"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" d="M4 5h16l-6 7.5V19l-4 1.5v-8L4 5z"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path stroke-linejoin="round" d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></g></symbol>
+  <symbol id="i-chip" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4m6-4v4M9 18v4m6-4v4M2 9h4m-4 6h4m12-6h4m-4 6h4"/></g></symbol>
+</svg>
+
+<header class="top">
+  <div class="shell">
+    <div class="top-in">
+      <div class="brand">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4f8cff"/><stop offset="1" stop-color="#7b5cff"/></linearGradient></defs><rect width="64" height="64" rx="15" fill="url(#lg)"/><g fill="none" stroke="#fff" stroke-linecap="round" stroke-width="4.6"><path d="M15 30.5a24 24 0 0 1 34 0" opacity=".55"/><path d="M21.5 37.5a15 15 0 0 1 21 0" opacity=".8"/></g><circle cx="32" cy="46" r="3.6" fill="#fff"/><path d="M14 52 52 12" stroke="#fff" stroke-width="4.4" stroke-linecap="round"/></svg>
+        <div><b>AdFree</b><small id="ident">connecting&hellip;</small></div>
+      </div>
+      <div class="grow"></div>
+      <span class="pill" id="pill"><i></i><span id="pillTxt">Connecting</span></span>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="Switch theme"><svg><use href="#i-moon"/></svg></button>
+    </div>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#overview" data-v="overview"><svg><use href="#i-home"/></svg>Overview</a>
+      <a href="#activity" data-v="activity"><svg><use href="#i-list"/></svg>Activity</a>
+      <a href="#filters" data-v="filters"><svg><use href="#i-filter"/></svg>Filters</a>
+      <a href="#settings" data-v="settings"><svg><use href="#i-gear"/></svg>Settings</a>
+      <a href="#device" data-v="device"><svg><use href="#i-chip"/></svg>Device</a>
+    </nav>
+  </div>
+</header>
+
+<main class="shell">
+  <div class="banner bad" id="offline" role="alert"><svg width="18" height="18"><use href="#i-warn"/></svg><span>Lost contact with the device. Retrying&hellip;</span></div>
+  <div class="banner warn" id="notice" role="status"></div>
+
+  <!-- ============ OVERVIEW ============ -->
+  <section class="view" id="v-overview" aria-labelledby="heroTitle">
+    <div class="card hero" id="hero">
+      <div class="shield"><svg><use href="#i-shield" id="heroIcon"/></svg></div>
+      <div class="hero-t">
+        <h1 id="heroTitle">Checking protection&hellip;</h1>
+        <p id="heroSub">&nbsp;</p>
+      </div>
+      <div class="hero-a">
+        <div class="seg" id="pauseSeg" role="group" aria-label="Pause blocking">
+          <button type="button" data-p="300">5 min</button>
+          <button type="button" data-p="1800">30 min</button>
+          <button type="button" data-p="3600">1 hour</button>
+          <button type="button" data-p="-1">Until resumed</button>
+        </div>
+        <div class="row">
+          <button class="btn pri" type="button" id="resumeBtn" hidden><svg><use href="#i-play"/></svg>Resume now</button>
+          <label class="sw" title="Turn blocking on or off"><input type="checkbox" id="enSw"><span></span><b id="enLbl" style="font-weight:580">Blocking</b></label>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid g4" style="margin-top:16px">
+      <div class="card kpi"><div class="l"><i style="background:var(--accent)"></i>Queries</div><div class="v num" id="kTotal">&ndash;</div><div class="s" id="kTotalS">since stats reset</div></div>
+      <div class="card kpi"><div class="l"><i style="background:var(--violet)"></i>Blocked</div><div class="v num" id="kBlocked">&ndash;</div><div class="s" id="kBlockedS">&nbsp;</div></div>
+      <div class="card kpi"><div class="ring" id="kRing" aria-hidden="true"></div><div class="l">Block rate</div><div class="v num" id="kPct">&ndash;</div><div class="s" id="kPctS">last 24 hours</div></div>
+      <div class="card kpi"><div class="l"><i style="background:var(--good)"></i>Domains on blocklist</div><div class="v num" id="kDomains">&ndash;</div><div class="s" id="kDomainsS">&nbsp;</div></div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-h">
+        <div><h2>Last 24 hours</h2><p id="chartSum">Queries every 10 minutes</p></div>
+        <div class="legend"><span><i style="background:var(--allowed)"></i>Allowed</span><span><i style="background:var(--blocked)"></i>Blocked</span></div>
+      </div>
+      <div class="chart" id="chart"><div class="empty">Collecting data&hellip;</div></div>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <div class="card-h"><h2>Most blocked</h2><p>since stats reset</p></div>
+        <ul class="list" id="topDom"><li class="empty">Nothing blocked yet</li></ul>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2>Busiest devices</h2><p>click a name to rename it</p></div>
+        <ul class="list" id="topCli"><li class="empty">No devices yet</li></ul>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:16px">
+      <div class="card-h"><h2>Live activity</h2><a href="#activity" class="btn sm ghost">Open full log &rarr;</a></div>
+      <ul class="list" id="liveQ"><li class="empty">Waiting for queries&hellip;</li></ul>
+    </div>
+  </section>
+
+  <!-- ============ ACTIVITY ============ -->
+  <section class="view" id="v-activity">
+    <div class="card">
+      <div class="card-h"><div><h2>Check a domain</h2><p>See whether a site is blocked, and which rule decides it.</p></div></div>
+      <form class="row" id="checkForm" autocomplete="off">
+        <div class="search grow" style="flex:1;min-width:200px"><svg><use href="#i-search"/></svg><input class="in mono" id="checkIn" placeholder="ads.example.com" aria-label="Domain to check" spellcheck="false" autocapitalize="off"></div>
+        <button class="btn pri" type="submit">Check</button>
+      </form>
+      <div class="check-res" id="checkRes" role="status"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div><h2>Query log</h2><p id="qSum">Most recent lookups, newest first.</p></div>
+        <label class="sw"><input type="checkbox" id="qLive" checked><span></span>Live</label></div>
+      <div class="toolbar">
+        <div class="seg" id="qFilter" role="group" aria-label="Filter queries">
+          <button type="button" data-f="all" aria-pressed="true">All</button>
+          <button type="button" data-f="b" aria-pressed="false">Blocked</button>
+          <button type="button" data-f="a" aria-pressed="false">Allowed</button>
+        </div>
+        <div class="search grow"><svg><use href="#i-search"/></svg><input class="in" id="qSearch" placeholder="Filter by domain or device" aria-label="Filter log" spellcheck="false" autocapitalize="off"></div>
+      </div>
+      <ul class="list" id="qList"><li class="empty">Loading&hellip;</li></ul>
+    </div>
+  </section>
+
+  <!-- ============ FILTERS ============ -->
+  <section class="view" id="v-filters">
+    <div class="card">
+      <div class="card-h">
+        <div><h2>Blocklists</h2><p id="blSum">&nbsp;</p></div>
+        <button class="btn" type="button" id="blRefresh"><svg><use href="#i-refresh"/></svg>Update now</button>
+      </div>
+      <div class="bar" id="capBar"><b></b></div>
+      <p class="hint" id="capTxt">&nbsp;</p>
+      <div class="progress" id="blProg"><b style="width:100%;animation:sk 1.2s infinite;background:linear-gradient(90deg,var(--accent),var(--violet),var(--accent));background-size:200% 100%"></b></div>
+      <div id="srcList" style="margin-top:10px"></div>
+      <form class="row" id="srcForm" style="margin-top:12px" autocomplete="off">
+        <input class="in mono" id="srcIn" type="url" placeholder="https://example.com/list.txt" aria-label="Blocklist URL" style="flex:1;min-width:220px">
+        <button class="btn" type="submit">Add list</button>
+      </form>
+      <p class="hint">Hosts files, plain domain lists and AdGuard/ABP lists all work. New lists load on the next update.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-h"><div><h2>Suggested lists</h2><p>Picked to fit in the device's memory alongside the defaults.</p></div></div>
+      <div id="presets"></div>
+    </div>
+
+    <div class="grid g2" style="margin-top:16px">
+      <div class="card">
+        <div class="card-h"><div><h2>Allowlist</h2><p>Never blocked. Covers subdomains too.</p></div></div>
+        <form class="row" data-list="allow" autocomplete="off"><input class="in mono" placeholder="example.com" aria-label="Domain to allow" style="flex:1;min-width:160px" spellcheck="false" autocapitalize="off"><button class="btn" type="submit">Allow</button></form>
+        <div class="chips" id="allowChips"></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><h2>Denylist</h2><p>Always blocked, even if no list has it.</p></div></div>
+        <form class="row" data-list="deny" autocomplete="off"><input class="in mono" placeholder="ads.example.com" aria-label="Domain to block" style="flex:1;min-width:160px" spellcheck="false" autocapitalize="off"><button class="btn" type="submit">Block</button></form>
+        <div class="chips" id="denyChips"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="view" id="v-settings">
+    <div class="grid g2">
+      <form class="card" id="dnsForm">
+        <div class="card-h"><div><h2>DNS</h2><p>Where allowed lookups are sent.</p></div></div>
+        <label class="field"><span>Upstream servers</span><textarea class="in" id="ups" rows="3" spellcheck="false"></textarea><small>One IPv4 address per line. The first one is used; the others take over if it stops answering.</small></label>
+        <label class="field"><span>Upstream timeout (ms)</span><input class="in num" id="tmo" type="number" min="200" max="5000" step="50"></label>
+        <div class="row" style="margin-top:16px"><button class="btn pri" type="submit">Save DNS</button></div>
+      </form>
+
+      <form class="card" id="updForm">
+        <div class="card-h"><div><h2>Automatic updates</h2><p>Keep lists and firmware current on their own.</p></div></div>
+        <label class="field"><span>Refresh blocklists every</span>
+          <select class="in" id="ivl"><option value="6">6 hours</option><option value="12">12 hours</option><option value="24">24 hours</option><option value="48">2 days</option><option value="168">7 days</option></select>
+          <small id="nextUpd">&nbsp;</small></label>
+        <div class="field"><label class="sw"><input type="checkbox" id="otaAuto"><span></span>Install firmware updates automatically</label>
+          <small>Checks once a day. Every image is SHA-256 verified, and the device rolls back by itself if a new version can't stay online.</small></div>
+        <label class="field"><span>Update manifest URL</span><input class="in mono" id="otaUrl" type="url" spellcheck="false"></label>
+        <div class="row" style="margin-top:16px"><button class="btn pri" type="submit">Save</button><button class="btn" type="button" id="otaCheck">Check now</button></div>
+        <p class="hint" id="otaRes">&nbsp;</p>
+      </form>
+
+      <form class="card" id="netForm">
+        <div class="card-h"><div><h2>Network address</h2><p id="netNow">&nbsp;</p></div></div>
+        <label class="sw"><input type="checkbox" id="stEn"><span></span>Use a fixed IP address</label>
+        <div class="grid g2" style="margin-top:12px;gap:12px">
+          <label class="field" style="margin:0"><span>IP address</span><input class="in mono" id="stIp" placeholder="192.168.0.95" inputmode="decimal"></label>
+          <label class="field" style="margin:0"><span>Gateway</span><input class="in mono" id="stGw" placeholder="192.168.0.1" inputmode="decimal"></label>
+        </div>
+        <label class="field"><span>Subnet mask</span><input class="in mono" id="stMask" placeholder="255.255.255.0" inputmode="decimal"><small>Applies after a reboot. AdFree checks that the three fit together before saving. A DHCP reservation on the router is the safer choice.</small></label>
+        <div class="row" style="margin-top:16px"><button class="btn pri" type="submit">Save address</button></div>
+      </form>
+
+      <div class="card">
+        <div class="card-h"><div><h2>Status light</h2><p>The LED on the board shows health at a glance.</p></div></div>
+        <label class="sw"><input type="checkbox" id="led"><span></span>Status LED on</label>
+        <p class="hint" style="margin-top:12px">Green blink: healthy. Amber: degraded. Blue: updating. Purple: paused. Red: no Wi-Fi. White pulse: setup hotspot.</p>
+      </div>
+
+      <form class="card" id="adminForm" autocomplete="off">
+        <div class="card-h"><div><h2>Admin login</h2><p>Protects this page and every setting.</p></div></div>
+        <label class="field"><span>Username</span><input class="in" id="auUser" autocomplete="username"></label>
+        <label class="field"><span>New password</span><input class="in" id="auPass" type="password" minlength="8" autocomplete="new-password"><small>At least 8 characters. Your browser will ask you to sign in again.</small></label>
+        <div class="row" style="margin-top:16px"><button class="btn pri" type="submit">Change login</button></div>
+      </form>
+
+      <form class="card" id="wifiForm" autocomplete="off">
+        <div class="card-h"><div><h2>Wi-Fi</h2><p>Moving house? Enter the new network before you unplug it.</p></div></div>
+        <label class="field"><span>Network name (SSID)</span><input class="in" id="wfSsid" maxlength="32"></label>
+        <label class="field"><span>Password</span><input class="in" id="wfPass" type="password" maxlength="63" autocomplete="new-password"></label>
+        <div class="row" style="margin-top:16px"><button class="btn" type="submit">Save &amp; reboot</button></div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ============ DEVICE ============ -->
+  <section class="view" id="v-device">
+    <div class="grid g2">
+      <div class="card">
+        <div class="card-h"><h2>Health</h2><span class="pill" id="upPill"><i></i><span>Upstream</span></span></div>
+        <dl class="kv">
+          <dt>Upstream</dt><dd class="mono" id="dUp">&ndash;</dd>
+          <dt>Timeouts / errors</dt><dd class="num" id="dErr">&ndash;</dd>
+          <dt>Uptime</dt><dd id="dUptime">&ndash;</dd>
+          <dt>Firmware</dt><dd id="dFw">&ndash;</dd>
+          <dt>Wi-Fi signal</dt><dd id="dRssi">&ndash;</dd>
+          <dt>Clock</dt><dd id="dNtp">&ndash;</dd>
+        </dl>
+      </div>
+      <div class="card">
+        <div class="card-h"><h2>Memory &amp; storage</h2></div>
+        <div style="font-size:13.5px"><div class="row" style="justify-content:space-between"><span>Internal RAM free</span><span class="num" id="dHeap">&ndash;</span></div><div class="bar"><b id="dHeapB"></b></div></div>
+        <div style="font-size:13.5px;margin-top:14px"><div class="row" style="justify-content:space-between"><span>PSRAM free</span><span class="num" id="dPsram">&ndash;</span></div><div class="bar"><b id="dPsramB"></b></div></div>
+        <div style="font-size:13.5px;margin-top:14px"><div class="row" style="justify-content:space-between"><span>Flash storage used</span><span class="num" id="dFs">&ndash;</span></div><div class="bar"><b id="dFsB"></b></div></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><h2>Network</h2></div></div>
+        <dl class="kv">
+          <dt>Address</dt><dd class="mono" id="dIp">&ndash;</dd>
+          <dt>Wi-Fi</dt><dd id="dSsid">&ndash;</dd>
+          <dt>MAC</dt><dd class="mono" id="dMac">&ndash;</dd>
+          <dt>Setup hotspot</dt><dd><span class="secret" id="dAp">&ndash;</span></dd>
+          <dt>Hotspot password</dt><dd><span class="secret" id="dApPass">&ndash;</span></dd>
+        </dl>
+        <p class="hint" style="margin-top:12px">If it can't join Wi-Fi it opens this hotspot so you can fix it from a phone. Write these down: you can't read them here once it's offline.</p>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><h2>Maintenance</h2></div></div>
+        <div class="row">
+          <button class="btn" type="button" id="resetStats">Reset statistics</button>
+          <button class="btn danger" type="button" id="rebootBtn">Reboot</button>
+        </div>
+        <div class="field" style="margin-top:18px"><span>Install firmware from a file</span>
+          <div class="row"><input type="file" id="fwFile" accept=".bin" class="in" style="flex:1;min-width:200px;padding-top:6px"><button class="btn" type="button" id="fwUp">Upload</button></div>
+          <div class="progress" id="fwProg"><b></b></div>
+          <small>Use the app-only <span class="mono">firmware.bin</span>, not the merged installer image.</small></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-h"><h2>Event log</h2><button class="btn sm" type="button" id="logCopy">Copy</button></div>
+      <pre class="log" id="log">Loading&hellip;</pre>
+    </div>
+  </section>
+</main>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var $=function(id){return document.getElementById(id)};
+var S={st:null,cfg:null,view:'overview',fails:0,qf:'all',names:{},cfgAt:0};
+var QT={1:'A',2:'NS',5:'CNAME',6:'SOA',12:'PTR',15:'MX',16:'TXT',28:'AAAA',33:'SRV',64:'SVCB',65:'HTTPS'};
+var PRESETS=[
+ {n:'HaGeZi Pro++',u:'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/pro.plus.txt',d:'Ads, trackers, telemetry and affiliate tracking. Strong default.'},
+ {n:'OISD Big',u:'https://big.oisd.nl/',d:'Broad ad and malware coverage with very few false positives.'},
+ {n:'HaGeZi Encrypted DNS bypass',u:'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/doh.txt',d:'Stops browsers and apps from skipping AdFree with DNS-over-HTTPS, and turns off iCloud Private Relay.'},
+ {n:'HaGeZi Threat Intelligence (mini)',u:'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/tif.mini.txt',d:'Phishing, malware and scam domains. Small enough to fit next to the ad lists.'},
+ {n:'HaGeZi Samsung smart TV',u:'https://raw.githubusercontent.com/hagezi/dns-blocklists/main/adblock/native.samsung.txt',d:'Samsung TV ads and telemetry the general lists miss.'}
+];
+try{S.names=JSON.parse(localStorage.getItem('adfree.names')||'{}')||{}}catch(e){}
+
+/* ---------- helpers ---------- */
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function fmt(n){return n==null?'–':Number(n).toLocaleString()}
+function compact(n){if(n<1e3)return String(n);if(n<1e6)return(n/1e3).toFixed(n<1e4?1:0).replace(/\.0$/,'')+'k';return(n/1e6).toFixed(1).replace(/\.0$/,'')+'M'}
+function ago(s){if(s==null||s<0)return 'never';if(s<45)return 'just now';if(s<3600)return Math.round(s/60)+' min ago';if(s<86400)return Math.round(s/3600)+' h ago';return Math.round(s/86400)+' d ago'}
+function short(s){if(s<60)return s+'s';if(s<3600)return Math.round(s/60)+'m';if(s<86400)return Math.round(s/3600)+'h';return Math.round(s/86400)+'d'}
+function dur(s){if(s<=0)return '0 min';if(s<3600)return Math.ceil(s/60)+' min';var d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);return(d?d+'d ':'')+(h?h+'h ':'')+(d?'':m+'m')}
+function inAfter(s){if(s<=0)return 'any moment';if(s<3600)return 'in '+Math.max(1,Math.round(s/60))+' min';if(s<86400)return 'in '+Math.round(s/3600)+' h';return 'in '+Math.round(s/86400)+' d'}
+function kb(b){return b>=1048576?(b/1048576).toFixed(1)+' MB':Math.round(b/1024)+' KB'}
+function name(ip){return S.names[ip]||ip}
+function set(id,t){var e=$(id);if(e&&e.textContent!==t)e.textContent=t}
+function toast(m,err){var t=$('toast');t.textContent=m;t.className='on'+(err?' err':'');clearTimeout(toast._t);toast._t=setTimeout(function(){t.className=err?'err':''},err?4200:2400)}
+function validDomain(d){return /^(?=.{3,253}$)([a-z0-9_]([a-z0-9_-]{0,61}[a-z0-9_])?\.)+[a-z0-9-]{2,63}$/.test(d)}
+function cleanDomain(s){s=String(s||'').trim().toLowerCase();s=s.replace(/^[a-z]+:\/\//,'').replace(/[\/?#:].*$/,'').replace(/^\*\./,'').replace(/^\|\||\^$/g,'').replace(/\.$/,'');return s}
+
+function req(method,url,body){
+  var ctl=window.AbortController?new AbortController():null,timer=setTimeout(function(){ctl&&ctl.abort()},8000);
+  var o={method:method,cache:'no-store',headers:{},signal:ctl?ctl.signal:undefined};
+  if(method!=='GET'){o.headers['X-AdFree']='1'}
+  if(body!==undefined){o.headers['Content-Type']='application/json';o.body=JSON.stringify(body)}
+  return fetch(url,o).then(function(r){clearTimeout(timer);
+    var ct=r.headers.get('content-type')||'';
+    var p=ct.indexOf('json')>=0?r.json():r.text();
+    return p.then(function(d){if(!r.ok){throw new Error(typeof d==='string'?d:(d&&d.error)||('HTTP '+r.status))}return d})
+  },function(e){clearTimeout(timer);throw e})
+}
+function post(url,body,okMsg){return req('POST',url,body).then(function(t){toast(okMsg||(typeof t==='string'?t:'Saved'));return t},function(e){toast(e.message||'Request failed',true);throw e})}
+function busy(btn,p){if(!btn)return p;btn.disabled=true;btn.classList.add('busy');var done=function(){btn.disabled=false;btn.classList.remove('busy')};p.then(done,done);return p}
+
+/* ---------- theme ---------- */
+function theme(){var t=document.documentElement.getAttribute('data-theme');if(!t)t=matchMedia('(prefers-color-scheme: light)').matches?'light':'dark';return t}
+function applyThemeIcon(){$('themeBtn').firstElementChild.firstElementChild.setAttribute('href',theme()==='dark'?'#i-sun':'#i-moon');$('themeBtn').setAttribute('aria-label',theme()==='dark'?'Switch to light theme':'Switch to dark theme')}
+try{var tsv=localStorage.getItem('adfree.theme');if(tsv)document.documentElement.setAttribute('data-theme',tsv)}catch(e){}
+applyThemeIcon();
+$('themeBtn').onclick=function(){var n=theme()==='dark'?'light':'dark';document.documentElement.setAttribute('data-theme',n);try{localStorage.setItem('adfree.theme',n)}catch(e){}applyThemeIcon();if(S.hist)drawChart(S.hist)};
+
+/* ---------- routing ---------- */
+function route(){
+  var v=(location.hash||'#overview').slice(1);if(!$('v-'+v))v='overview';
+  if(S.routed&&S.view!==v)window.scrollTo(0,0);S.routed=true;S.view=v;
+  var tabs=document.querySelectorAll('.tabs a');for(var i=0;i<tabs.length;i++){if(tabs[i].getAttribute('data-v')===v)tabs[i].setAttribute('aria-current','page');else tabs[i].removeAttribute('aria-current')}
+  var vs=document.querySelectorAll('.view');for(i=0;i<vs.length;i++)vs[i].classList.toggle('on',vs[i].id==='v-'+v);
+  if(v==='filters'||v==='settings'||v==='device')loadCfg(true);
+  runDue(true);
+}
+addEventListener('hashchange',route);
+
+/* ---------- status ---------- */
+function renderStatus(d){
+  S.st=d;
+  var hero=$('hero'),cls='',title,sub,icon='#i-shield',pill='ok',ptxt='Protecting';
+  var degraded=!d.upstream_ok||!d.domains;
+  if(!d.enabled){cls='off';title='Blocking is off';sub='Every lookup goes straight to the upstream server. Ads are not blocked.';icon='#i-off';pill='bad';ptxt='Off'}
+  else if(d.paused){cls='paused';icon='#i-pause';pill='violet';
+    if(d.pause_left<0){title='Paused until you resume';ptxt='Paused'}
+    else{title='Paused for '+dur(d.pause_left);ptxt='Paused '+short(d.pause_left)}
+    sub='Ads are getting through on every device while paused.'}
+  else if(degraded){cls='degraded';icon='#i-warn';pill='warn';ptxt='Degraded';
+    title=!d.domains?'Waiting for the blocklist':'Upstream DNS is struggling';
+    sub=!d.domains?(d.bl.refreshing?'Downloading blocklists now. Lookups pass through until it finishes.':'No blocklist loaded yet. Lookups pass through until one downloads.'):'Lookups are slow or failing at '+d.upstream+'. AdFree is trying the next server.'}
+  else{title='Protection is on';
+    sub='Blocking ads and trackers'+(d.clients?' for '+d.clients+(d.clients===1?' device':' devices'):'')+'. Lists updated '+ago(d.bl.age)+'.'}
+  hero.className='card hero '+cls;
+  $('heroIcon').setAttribute('href',icon);
+  set('heroTitle',title);set('heroSub',sub);
+  var p=$('pill');p.className='pill '+pill;set('pillTxt',ptxt);
+  $('enSw').checked=!!d.enabled;set('enLbl',d.enabled?'Blocking':'Off');
+  $('resumeBtn').hidden=!d.paused;
+  var segB=$('pauseSeg').querySelectorAll('button');for(var i=0;i<segB.length;i++)segB[i].disabled=!d.enabled;
+  set('ident',(d.host||'adblock')+'.local · '+(d.ip||''));
+  document.title=(d.paused?'Paused · ':!d.enabled?'Off · ':'')+'AdFree';
+
+  set('kTotal',fmt(d.total));set('kBlocked',fmt(d.blocked));
+  set('kBlockedS',d.total?(100*d.blocked/d.total).toFixed(1)+'% of all queries':' ');
+  set('kDomains',fmt(d.domains));
+  set('kDomainsS',d.bl.refreshing?'updating now…':'updated '+ago(d.bl.age));
+  set('kTotalS','since stats reset · up '+dur(d.uptime));
+
+  // filters view bits
+  set('blSum',(d.bl.refreshing?'Updating now… ':'Updated '+ago(d.bl.age)+'. ')+(d.bl.next>=0&&!d.bl.refreshing?'Next update '+inAfter(d.bl.next)+'.':''));
+  $('blProg').classList.toggle('on',!!d.bl.refreshing);
+  $('blRefresh').disabled=!!d.bl.refreshing;
+  var cap=d.bl.cap||700000,pc=Math.min(100,100*d.domains/cap);
+  $('capBar').firstElementChild.style.width=pc+'%';$('capBar').classList.toggle('warn',pc>90);
+  set('capTxt',fmt(d.domains)+' of '+fmt(cap)+' domains used ('+pc.toFixed(0)+'% of what fits in memory)'+(d.bl.err?' · Last problem: '+d.bl.err:''));
+  set('nextUpd',d.bl.next>=0?'Next blocklist update '+inAfter(d.bl.next)+'.':'');
+  set('otaRes',d.ota.busy?'Updating firmware… '+d.ota.pct+'%':(d.ota.result?'Last check: '+d.ota.result:''));
+
+  // device view bits
+  var up=$('upPill');up.className='pill '+(d.upstream_ok?'ok':'warn');up.lastElementChild.textContent=d.upstream_ok?'Upstream healthy':'Upstream degraded';
+  set('dUp',d.upstream);set('dErr',fmt(d.timeouts)+' / '+fmt(d.errors));set('dUptime',dur(d.uptime));
+  set('dFw',d.fw+(d.ota.pending?' (verifying new image)':'')+(d.ota.available&&d.ota.available!==d.fw?' · '+d.ota.available+' available':''));
+  set('dRssi',d.rssi+' dBm · '+(d.rssi>-60?'strong':d.rssi>-72?'good':d.rssi>-82?'weak':'very weak'));
+  set('dNtp',d.ntp?'Synced':'Not synced yet (pause timers wait for it)');
+  set('dHeap',kb(d.heap)+' (lowest '+kb(d.heap_min)+')');$('dHeapB').style.width=Math.min(100,100*d.heap/(d.heap_total||327680))+'%';
+  set('dPsram',kb(d.psram)+' of '+kb(d.psram_total));$('dPsramB').style.width=(d.psram_total?100*d.psram/d.psram_total:0)+'%';
+  var n=$('notice');
+  if(d.bl.err&&!d.bl.refreshing&&d.bl.sources_failed){n.innerHTML='<svg width="18" height="18"><use href="#i-warn"/></svg><span>'+esc(d.bl.sources_failed+' blocklist'+(d.bl.sources_failed>1?'s':'')+' failed to download last time: '+d.bl.err)+'. AdFree kept the previous list and will retry.</span>';n.classList.add('show')}
+  else n.classList.remove('show');
+}
+
+/* ---------- history chart ---------- */
+function drawChart(h){
+  S.hist=h;var el=$('chart'),q=h.q||[],b=h.b||[],N=q.length;
+  if(!N){el.innerHTML='<div class="empty">Collecting data&hellip;</div>';return}
+  var tq=0,tb=0,max=1,i;for(i=0;i<N;i++){tq+=q[i];tb+=b[i];if(q[i]>max)max=q[i]}
+  set('kPct',tq?(100*tb/tq).toFixed(1)+'%':'–');$('kRing').style.setProperty('--p',tq?(100*tb/tq).toFixed(1):0);
+  set('kPctS',fmt(tb)+' of '+fmt(tq)+' in 24 h');
+  set('chartSum',tq?fmt(tq)+' queries, '+fmt(tb)+' blocked. Each bar is 10 minutes.':'Each bar is 10 minutes.');
+  var W=el.clientWidth||600,H=180,pl=34,pb=20,cw=W-pl,ch=H-pb-6,bw=cw/N,gap=bw>4?1:0;
+  var nice=Math.pow(10,Math.floor(Math.log10(max)));var top=Math.ceil(max/nice)*nice;if(top/nice>5&&nice>1)top=Math.ceil(max/(nice*2))*nice*2;
+  var a='',bl='';
+  for(i=0;i<N;i++){var x=(pl+i*bw).toFixed(1),w=Math.max(.6,bw-gap).toFixed(1);
+    var ha=q[i]/top*ch,hb=b[i]/top*ch;
+    if(q[i])a+='M'+x+' '+(6+ch-ha).toFixed(1)+'h'+w+'V'+(6+ch)+'h-'+w+'z';
+    if(b[i])bl+='M'+x+' '+(6+ch-hb).toFixed(1)+'h'+w+'V'+(6+ch)+'h-'+w+'z';}
+  var g='',ax='';
+  for(i=0;i<=2;i++){var v=top*i/2,y=(6+ch-ch*i/2).toFixed(1);g+='<line class="gl" x1="'+pl+'" x2="'+W+'" y1="'+y+'" y2="'+y+'"/>';ax+='<text class="axis" x="'+(pl-6)+'" y="'+(+y+3.5)+'" text-anchor="end">'+compact(v)+'</text>'}
+  var labels=[[0,'24h ago'],[N/4,'18h'],[N/2,'12h'],[3*N/4,'6h'],[N,'now']];
+  for(i=0;i<labels.length;i++){var lx=pl+labels[i][0]*bw;ax+='<text class="axis" x="'+lx.toFixed(1)+'" y="'+(H-4)+'" text-anchor="'+(i===0?'start':i===labels.length-1?'end':'middle')+'">'+labels[i][1]+'</text>'}
+  el.innerHTML='<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" role="img" aria-label="Queries over the last 24 hours">'+g+'<path d="'+a+'" fill="var(--allowed)"/><path d="'+bl+'" fill="var(--blocked)"/><rect id="hov" fill="var(--fg)" opacity="0" width="'+Math.max(1,bw).toFixed(1)+'" y="6" height="'+ch+'"/>'+ax+'</svg><div class="tip" id="tip"></div>';
+  var svg=el.firstChild,tip=$('tip'),hov=$('hov');
+  svg.onmousemove=function(e){var r=svg.getBoundingClientRect(),x=(e.clientX-r.left)*(W/r.width);var k=Math.floor((x-pl)/bw);if(k<0||k>=N){tip.className='tip';hov.setAttribute('opacity',0);return}
+    var minsAgo=(N-1-k)*(h.step/60)+Math.round((h.age||0)/60);
+    tip.innerHTML='<b>'+fmt(q[k])+'</b> queries, <b style="color:var(--violet)">'+fmt(b[k])+'</b> blocked<br><span style="color:var(--faint)">'+(minsAgo<10?'last 10 minutes':ago(minsAgo*60))+'</span>';
+    var px=(pl+k*bw+bw/2)*(r.width/W);tip.style.left=Math.min(Math.max(px-tip.offsetWidth/2,0),r.width-tip.offsetWidth)+'px';tip.style.top='-8px';tip.className='tip on';
+    hov.setAttribute('x',(pl+k*bw).toFixed(1));hov.setAttribute('opacity',.07)};
+  svg.onmouseleave=function(){tip.className='tip';hov.setAttribute('opacity',0)};
+}
+
+/* ---------- top lists ---------- */
+function renderTop(d){
+  var td=d.domains||[],tc=d.clients||[];
+  var mx=td.length?td[0].n:1;
+  $('topDom').innerHTML=td.length?td.slice(0,8).map(function(r){return '<li class="li"><div class="rank"><em style="transform:scaleX('+(r.n/mx).toFixed(3)+')"></em><span title="'+esc(r.d)+'">'+esc(r.d)+'</span></div><span class="n num">'+fmt(r.n)+'</span></li>'}).join(''):'<li class="empty">Nothing blocked yet</li>';
+  var mc=tc.length?tc[0].q:1;
+  $('topCli').innerHTML=tc.length?tc.slice(0,8).map(function(r){var pct=r.q?Math.round(100*r.b/r.q):0;return '<li class="li"><div class="rank c"><em style="transform:scaleX('+(r.q/mc).toFixed(3)+')"></em><span><b class="client" data-ip="'+esc(r.ip)+'" style="color:var(--fg);font-weight:560">'+esc(name(r.ip))+'</b>'+(S.names[r.ip]?' <span style="color:var(--faint);display:inline">'+esc(r.ip)+'</span>':'')+'</span></div><span class="m">'+pct+'% blocked</span><span class="n num">'+compact(r.q)+'</span></li>'}).join(''):'<li class="empty">No devices yet</li>';
+}
+
+/* ---------- query log ---------- */
+var REASON={1:'Blocklist',2:'Your denylist',3:'Allowlisted'};
+function qRow(r,full){
+  var blocked=r.b===1,cls=blocked?'b':r.r===3?'w':'a',lab=blocked?'Blocked':r.r===3?'Allowed':'OK';
+  var act=blocked?'<button class="btn sm act" data-do="allow" data-d="'+esc(r.d)+'">Allow</button>':'<button class="btn sm act" data-do="deny" data-d="'+esc(r.d)+'">Block</button>';
+  var why=blocked?(REASON[r.r]||''):r.r===3?REASON[3]:'';
+  return '<li class="li qrow"><span class="tag '+cls+'" title="'+esc(REASON[r.r]||'Forwarded to upstream')+'">'+lab+'</span><div class="qm"><div class="d" title="'+esc(r.d)+'">'+esc(r.d)+'</div><div class="qs"><span class="client" data-ip="'+esc(r.c)+'">'+esc(name(r.c))+'</span> · <span class="num">'+(r.a<2?'now':short(r.a)+' ago')+'</span>'+(full?' · '+(QT[r.t]||'type '+r.t):'')+(why&&full?' · '+why:'')+'</div></div>'+act+'</li>'
+}
+function renderQ(d){
+  S.q=d.items||[];
+  var live=S.q.slice(0,10);
+  $('liveQ').innerHTML=live.length?live.map(function(r){return qRow(r,false)}).join(''):'<li class="empty">Waiting for queries&hellip;</li>';
+  renderQFull();
+}
+function renderQFull(){
+  var f=S.qf,s=$('qSearch').value.trim().toLowerCase(),items=(S.q||[]).filter(function(r){
+    if(f==='b'&&r.b!==1)return false;if(f==='a'&&r.b===1)return false;
+    if(s&&r.d.indexOf(s)<0&&r.c.indexOf(s)<0&&name(r.c).toLowerCase().indexOf(s)<0)return false;return true});
+  $('qList').innerHTML=items.length?items.map(function(r){return qRow(r,true)}).join(''):'<li class="empty">'+(S.q&&S.q.length?'No lookups match this filter':'No lookups yet')+'</li>';
+  var nb=0;(S.q||[]).forEach(function(r){if(r.b===1)nb++});
+  set('qSum','Last '+(S.q||[]).length+' lookups, newest first. '+nb+' blocked.');
+}
+$('qFilter').onclick=function(e){var b=e.target.closest('button');if(!b)return;S.qf=b.getAttribute('data-f');var bs=this.querySelectorAll('button');for(var i=0;i<bs.length;i++)bs[i].setAttribute('aria-pressed',bs[i]===b);renderQFull()};
+$('qSearch').oninput=renderQFull;
+
+/* one-click allow/deny + rename */
+document.addEventListener('click',function(e){
+  var b=e.target.closest('[data-do]');
+  if(b){var dom=b.getAttribute('data-d'),what=b.getAttribute('data-do');
+    busy(b,post('/api/domain',{d:dom,list:what,op:'add'},what==='allow'?'Allowed '+dom:'Blocking '+dom)).then(function(){S.cfgAt=0;loadCfg(true)});return}
+  var c=e.target.closest('.client');
+  if(c){var ip=c.getAttribute('data-ip'),cur=S.names[ip]||'';var nn=prompt('Name for '+ip+' (stored in this browser only)',cur);if(nn===null)return;nn=nn.trim();
+    if(nn)S.names[ip]=nn.slice(0,40);else delete S.names[ip];try{localStorage.setItem('adfree.names',JSON.stringify(S.names))}catch(x){}
+    if(S.top)renderTop(S.top);if(S.q)renderQ({items:S.q})}
+});
+
+/* domain checker */
+$('checkForm').onsubmit=function(e){e.preventDefault();var d=cleanDomain($('checkIn').value);if(!validDomain(d)){toast('Enter a domain like ads.example.com',true);return}
+  $('checkIn').value=d;
+  req('GET','/api/check?d='+encodeURIComponent(d)).then(function(r){var el=$('checkRes'),why;
+    if(r.reason==='allow'){el.className='check-res on w';why='<b>Allowed</b> by your allowlist entry <span class="mono">'+esc(r.match)+'</span>.'}
+    else if(r.reason==='deny'){el.className='check-res on b';why='<b>Blocked</b> by your denylist entry <span class="mono">'+esc(r.match)+'</span>.'}
+    else if(r.reason==='list'){el.className='check-res on b';why='<b>Blocked</b> by the blocklists'+(r.match!==d?' (matches <span class="mono">'+esc(r.match)+'</span>)':'')+'.'}
+    else{el.className='check-res on a';why='<b>Not blocked.</b> No list has <span class="mono">'+esc(d)+'</span> or a parent domain.'}
+    if(r.reason!=='none'&&!S.st.enabled)why+=' Blocking is off right now, so it would get through anyway.';
+    else if(r.reason!=='none'&&S.st.paused)why+=' Blocking is paused right now.';
+    var btn=r.blocked?'<button class="btn sm" data-do="allow" data-d="'+esc(d)+'">Allow it</button>':'<button class="btn sm" data-do="deny" data-d="'+esc(d)+'">Block it</button>';
+    if(r.reason==='allow'||r.reason==='deny')btn='<a class="btn sm" href="#filters">Edit lists</a>';
+    el.innerHTML='<span style="flex:1;min-width:200px">'+why+'</span>'+btn},function(e){toast(e.message,true)})};
+
+/* ---------- config / filters ---------- */
+function loadCfg(force){if(!force&&Date.now()-S.cfgAt<30000&&S.cfg)return Promise.resolve(S.cfg);
+  return req('GET','/api/config').then(function(c){S.cfg=c;S.cfgAt=Date.now();renderCfg(c);return c},function(){})}
+function chips(id,arr,list){
+  $(id).innerHTML=arr.length?arr.map(function(d){return '<span class="chip"><span title="'+esc(d)+'">'+esc(d)+'</span><button type="button" aria-label="Remove '+esc(d)+'" data-rm="'+esc(d)+'" data-list="'+list+'"><svg width="13" height="13"><use href="#i-x"/></svg></button></span>'}).join(''):'<span class="hint" style="margin:0">Empty.</span>'}
+function renderCfg(c){
+  chips('allowChips',c.whitelist||[],'allow');chips('denyChips',c.blacklist||[],'deny');
+  var srcs=c.sources||[],byUrl={};srcs.forEach(function(s){byUrl[s.url]=s});
+  $('srcList').innerHTML=(c.urls||[]).map(function(u){var s=byUrl[u],st=!s?'Loads on the next update':s.ok?fmt(s.n)+' entries':'Failed: '+s.err;
+    return '<div class="src"><span class="dot '+(!s?'':s.ok?'ok':'bad')+'"></span><div class="b"><div class="u">'+esc(u)+'</div><div class="st">'+esc(st)+'</div></div><button class="btn sm ghost" type="button" data-rmsrc="'+esc(u)+'" aria-label="Remove list">Remove</button></div>'}).join('')||'<p class="empty">No blocklists. Add one below or pick a suggested list.</p>';
+  $('presets').innerHTML=PRESETS.map(function(p){var on=(c.urls||[]).indexOf(p.u)>=0;
+    return '<div class="preset"><div class="b"><b>'+esc(p.n)+'</b><p>'+esc(p.d)+'</p></div>'+(on?'<span class="tag w">Added</span>':'<button class="btn sm" type="button" data-addsrc="'+esc(p.u)+'">Add</button>')+'</div>'}).join('');
+  if(!S.formsLoaded||S.view!=='settings'){
+    $('ups').value=(c.upstreams||[]).join('\n');$('tmo').value=c.timeout;
+    var iv=$('ivl');if(![].some.call(iv.options,function(o){return +o.value===c.interval})){var o=document.createElement('option');o.value=c.interval;o.textContent=c.interval+' hours';iv.appendChild(o)}iv.value=c.interval;
+    $('otaAuto').checked=!!c.ota_auto;$('otaUrl').value=c.ota_url||'';$('led').checked=!!c.led;
+    $('stEn').checked=!!c.static_enable;$('stIp').value=c.static_ip||c.ip||'';$('stGw').value=c.static_gw||c.gw||'';$('stMask').value=c.static_mask||c.mask||'';
+    $('auUser').value=c.admin_user||'admin';$('wfSsid').value=c.ssid||'';
+    S.formsLoaded=true}
+  set('netNow','Now using '+(c.static_enable?'a fixed address':'DHCP')+': '+c.ip+' via '+c.gw);
+  set('dIp',c.ip+' / '+c.mask+' via '+c.gw);set('dSsid',c.ssid||'–');set('dMac',c.mac);set('dAp',c.ap_ssid||'–');set('dApPass',c.ap_pass||'–');
+  set('dFs',kb(c.fs_used)+' of '+kb(c.fs_total));$('dFsB').style.width=(c.fs_total?100*c.fs_used/c.fs_total:0)+'%';
+}
+document.addEventListener('submit',function(e){var f=e.target,l=f.getAttribute('data-list');if(!l)return;e.preventDefault();
+  var inp=f.querySelector('input'),raw=inp.value.split(/[\s,]+/).map(cleanDomain).filter(Boolean);
+  var bad=raw.filter(function(d){return !validDomain(d)});if(!raw.length)return;if(bad.length){toast('Not a domain: '+bad[0],true);return}
+  var p=raw.reduce(function(pr,d){return pr.then(function(){return req('POST','/api/domain',{d:d,list:l,op:'add'})})},Promise.resolve());
+  busy(f.querySelector('button'),p.then(function(){inp.value='';toast(raw.length>1?raw.length+' domains added':(l==='allow'?'Allowed ':'Blocking ')+raw[0]);return loadCfg(true)},function(er){toast(er.message,true)}))});
+document.addEventListener('click',function(e){
+  var r=e.target.closest('[data-rm]');if(r){var d=r.getAttribute('data-rm');post('/api/domain',{d:d,list:r.getAttribute('data-list'),op:'remove'},'Removed '+d).then(function(){loadCfg(true)});return}
+  var rs=e.target.closest('[data-rmsrc]');if(rs){var u=rs.getAttribute('data-rmsrc');if(!confirm('Remove this blocklist?\n'+u))return;saveUrls((S.cfg.urls||[]).filter(function(x){return x!==u}),'List removed. It drops out on the next update.');return}
+  var as=e.target.closest('[data-addsrc]');if(as){addUrl(as.getAttribute('data-addsrc'))}
+});
+function saveUrls(urls,msg){return post('/api/lists',{urls:urls},msg).then(function(){return loadCfg(true)})}
+function addUrl(u){u=u.trim();if(!/^https?:\/\/\S+$/i.test(u)){toast('Enter a full http:// or https:// address',true);return}
+  if((S.cfg.urls||[]).indexOf(u)>=0){toast('That list is already added');return}
+  saveUrls((S.cfg.urls||[]).concat([u]),'List added').then(function(){if(confirm('Download the new list now?'))post('/api/refresh',undefined,'Updating blocklists…')})}
+$('srcForm').onsubmit=function(e){e.preventDefault();addUrl($('srcIn').value);$('srcIn').value=''};
+$('blRefresh').onclick=function(){busy(this,post('/api/refresh',undefined,'Updating blocklists…')).then(function(){setTimeout(tickStatus,800)})};
+
+/* ---------- settings forms ---------- */
+function ipOk(s){return /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/.test(s)}
+$('dnsForm').onsubmit=function(e){e.preventDefault();var ups=$('ups').value.split(/[\s,]+/).filter(Boolean),bad=ups.filter(function(x){return !ipOk(x)});
+  if(!ups.length||bad.length){toast(bad.length?'Not an IPv4 address: '+bad[0]:'Add at least one server',true);return}
+  busy(e.submitter,post('/api/settings',{upstreams:ups,timeout:+$('tmo').value})).then(function(){loadCfg(true)})};
+$('updForm').onsubmit=function(e){e.preventDefault();busy(e.submitter,post('/api/settings',{interval:+$('ivl').value,ota_auto:$('otaAuto').checked,ota_url:$('otaUrl').value.trim()})).then(function(){loadCfg(true)})};
+$('otaCheck').onclick=function(){busy(this,post('/api/otacheck',undefined,'Checking for firmware updates…'))};
+$('led').onchange=function(){post('/api/settings',{led:this.checked},this.checked?'Status LED on':'Status LED off')};
+$('netForm').onsubmit=function(e){e.preventDefault();var en=$('stEn').checked,ip=$('stIp').value.trim(),gw=$('stGw').value.trim(),m=$('stMask').value.trim();
+  if(en&&!(ipOk(ip)&&ipOk(gw)&&ipOk(m))){toast('Fill in a valid IP, gateway and mask',true);return}
+  busy(e.submitter,post('/api/settings',{static_enable:en,static_ip:ip,static_gw:gw,static_mask:m})).then(function(){loadCfg(true)})};
+$('adminForm').onsubmit=function(e){e.preventDefault();var p=$('auPass').value,u=$('auUser').value.trim();if(p.length<8){toast('Use at least 8 characters',true);return}if(!u){toast('Enter a username',true);return}
+  busy(e.submitter,post('/api/admin',{user:u,new_pass:p})).then(function(){$('auPass').value=''})};
+$('wifiForm').onsubmit=function(e){e.preventDefault();var s=$('wfSsid').value.trim();if(!s){toast('Enter the network name',true);return}
+  if(!confirm('Join "'+s+'" and reboot now?\n\nIf it can\'t connect, it opens its setup hotspot ('+((S.cfg&&S.cfg.ap_ssid)||'ADFREE-XXXX')+').'))return;
+  busy(e.submitter,post('/api/admin',{wifi_ssid:s,wifi_pass:$('wfPass').value,reboot:true}))};
+
+/* ---------- device ---------- */
+$('rebootBtn').onclick=function(){if(!confirm('Reboot AdFree? DNS stops for about 15 seconds.'))return;busy(this,post('/api/reboot',undefined,'Rebooting…'))};
+$('resetStats').onclick=function(){if(!confirm('Reset all counters, the chart and the query log?'))return;post('/api/resetstats',undefined,'Statistics reset').then(function(){runDue(true,true)})};
+$('logCopy').onclick=function(){var t=$('log').textContent;(navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(function(){toast('Log copied')},function(){toast('Copy not available here',true)})};
+$('fwUp').onclick=function(){var f=$('fwFile').files[0];if(!f){toast('Choose a firmware .bin first',true);return}
+  if(!confirm('Install '+f.name+' ('+kb(f.size)+')? The device reboots when done.'))return;
+  var x=new XMLHttpRequest(),fd=new FormData(),pr=$('fwProg'),btn=this;fd.append('firmware',f,f.name);
+  x.open('POST','/api/upload');x.setRequestHeader('X-AdFree','1');pr.classList.add('on');btn.disabled=true;
+  x.upload.onprogress=function(e){if(e.lengthComputable)pr.firstElementChild.style.width=(100*e.loaded/e.total)+'%'};
+  x.onload=function(){btn.disabled=false;if(x.status===200){toast('Installed. Rebooting…')}else{toast(x.responseText||'Upload failed',true);pr.classList.remove('on')}};
+  x.onerror=function(){btn.disabled=false;toast('Upload failed',true);pr.classList.remove('on')};x.send(fd)};
+
+/* ---------- hero controls ---------- */
+$('pauseSeg').onclick=function(e){var b=e.target.closest('button');if(!b)return;busy(b,post('/api/pause?secs='+b.getAttribute('data-p'))).then(tickStatus)};
+$('resumeBtn').onclick=function(){busy(this,post('/api/pause?secs=0')).then(tickStatus)};
+$('enSw').onchange=function(){var want=this.checked;if(!want&&!confirm('Turn blocking off for every device until you turn it back on?')){this.checked=true;return}
+  post('/api/toggle',{enabled:want}).then(tickStatus,tickStatus)};
+
+/* ---------- scheduler ---------- */
+function tickStatus(){return req('GET','/api/status').then(function(d){S.fails=0;$('offline').classList.remove('show');renderStatus(d)},function(){if(++S.fails>=2)$('offline').classList.add('show')})}
+var TASKS=[
+  {f:tickStatus,every:3000,views:null},
+  {f:function(){return req('GET','/api/history').then(drawChart)},every:60000,views:['overview']},
+  {f:function(){return req('GET','/api/top').then(function(d){S.top=d;renderTop(d)})},every:15000,views:['overview']},
+  {f:function(){if(S.view==='activity'&&!$('qLive').checked&&S.q)return Promise.resolve();return req('GET','/api/queries').then(renderQ)},every:4000,views:['overview','activity']},
+  {f:function(){return req('GET','/api/log').then(function(d){var el=$('log'),stick=el.scrollTop+el.clientHeight>=el.scrollHeight-20;el.textContent=(d.lines||[]).join('\n')||'No events yet.';if(stick)el.scrollTop=el.scrollHeight})},every:5000,views:['device']},
+  {f:function(){return loadCfg(true)},every:30000,views:['filters','device']}
+];
+function runDue(viewChange,all){var now=Date.now();if(document.hidden&&!viewChange)return;
+  TASKS.forEach(function(t){if(t.views&&t.views.indexOf(S.view)<0)return;if(t.busy)return;
+    if(all||now-(t.last||0)>=t.every||(viewChange&&t.views&&now-(t.last||0)>1500)){t.last=now;t.busy=true;var p=t.f();(p&&p.then?p:Promise.resolve()).then(function(){t.busy=false},function(){t.busy=false})}})}
+setInterval(function(){runDue(false)},1000);
+document.addEventListener('visibilitychange',function(){if(!document.hidden)runDue(true)});
+var rz;addEventListener('resize',function(){clearTimeout(rz);rz=setTimeout(function(){if(S.hist&&S.view==='overview')drawChart(S.hist)},150)});
+route();
+})();
+</script>
+</body>
+</html>
